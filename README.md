@@ -39,9 +39,26 @@ For example, 'id' if model.id is the primary key on your model.  Or 'UserId' for
 * Optional parameters
   * **model** - A model object to be used.  If none is provided, GenericModel will be used which is defined by SmartCollection. The constructor function must take just one argument, a plain JavaScript object with all your model attributes.
 
-### Example: Creating a SmartCollection
+### Routes
 
-    app.factory('UserCollection', function(SmartCollection) {
+Each route can have the following properties:
+* Required parameters
+  * **url** - The URL for this API call.  You can use colon-denoted parameters to add attributes from a model object.  Each colon-denoted parameter should have an associated urlKeys value.  Example: "/users.json" or "/users/3.json"
+  * **method** - Any HTTP method accepted by $http.  Example: "get", "post", "delete", etc.
+
+* Optional parameters
+  * **responseType** - String.  Determines what happens when a successful response is received.  Default: 'ignore'
+    * "_ignore_" - Do nothing. (default)
+    * "_array_" - Response is an array of items that represents the entire collection.  New items will be created and added to the collection, existing items will have attributes merged, and anything in the existing collection that does not exist in the response array will be removed.
+    * "_one_" - Response is a single item.  Using its primary key, it will be added or merged into the current collection.
+    * "_remove_" - After a successful response is received, the item operated on by this route will be removed from the local collection array.
+  * **urlKeys** - A hash that maps model attributes to url parameters.  Example: ```{id: 'id'}```
+  * **transformRequestData(data)** - A function that transforms a model before it is sent as they parameter payload on the $http request.  This should return a plain JavaScript object with all the attributes you want to send to the HTTP request.
+  * **transformResponseData(data)** - A function that transforms the response.data from $http before it is turned into a model object by SmartCollection.  This should return a plain JavaScript object with all the attributes (and any changes) you want to store in the model.
+
+### Example
+
+    app.factory('UserCollection', function(SmartCollection, UserModel) {
       return new SmartCollection({
         key: "id",
         model: UserModel,
@@ -61,16 +78,19 @@ For example, 'id' if model.id is the primary key on your model.  Or 'UserId' for
       })
     });
     
-    var User = function(attrs) {
-      this.id = attrs.id;
-      this.firstName = attrs.first_name;
-      this.lastName = attrs.last_name;
-    }
-    user.prototype.fullName = function() {
-      return this.firstName+' '+this.lastName;
-    }
-    
-### Example Usage
+    app.factory('UserModel', function() {
+        var UserModel = function(attrs) {
+          this.id = attrs.id;
+          this.firstName = attrs.first_name;
+          this.lastName = attrs.last_name;
+        };
+        
+        UserModel.prototype.fullName = function() {
+          return this.firstName+' '+this.lastName;
+        };
+        
+        return UserModel;
+    });
     
     app.controller('UsersController', function(UserCollection, $scope) {
         $scope.users = UserCollection.items();
