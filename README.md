@@ -24,7 +24,7 @@ assume anything about your API.  Every route will get its own function in the Sm
 There are only two functions that SmartCollection provides inherently:
 
 * **items()** - Returns a reference to the collection array.  It will always
-return the /same/ reference to the /same/ array every time it is called.  You
+return the *same* reference to the *same* array every time it is called.  You
 should *not* add or remove items from this array directly.
 
 * **item(id)** - Returns a reference to a single model object from the collection,
@@ -39,9 +39,12 @@ For example, 'id' if model.id is the primary key on your model.  Or 'UserId' for
 * Optional parameters
   * **model** - A model object to be used.  If none is provided, GenericModel will be used which is defined by SmartCollection. The constructor function must take just one argument, a plain JavaScript object with all your model attributes.
 
-### Routes
+### Routing
 
-Each route can have the following properties:
+Every route you define is given its own function on the SmartCollection instance.  In the example below, UserCollection.update() is a function created because the "update" route was define.  The route function accepts 0 or 1 parameters.  If a parameter is given, it is assumed to be a model object.
+
+When defining routes, these are the availble parameters:
+
 * Required parameters
   * **url** - The URL for this API call.  You can use colon-denoted parameters to add attributes from a model object.  Each colon-denoted parameter should have an associated urlKeys value.  Example: "/users.json" or "/users/3.json"
   * **method** - Any HTTP method accepted by $http.  Example: "get", "post", "delete", etc.
