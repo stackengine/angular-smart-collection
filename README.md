@@ -79,34 +79,34 @@ Each route can have the following properties:
     });
     
     app.factory('UserModel', function() {
-        var UserModel = function(attrs) {
-          this.id = attrs.id;
-          this.firstName = attrs.first_name;
-          this.lastName = attrs.last_name;
-        };
-        
-        UserModel.prototype.fullName = function() {
-          return this.firstName+' '+this.lastName;
-        };
-        
-        return UserModel;
+      var UserModel = function(attrs) {
+        this.id = attrs.id;
+        this.firstName = attrs.first_name;
+        this.lastName = attrs.last_name;
+      };
+    
+      UserModel.prototype.fullName = function() {
+        return this.firstName+' '+this.lastName;
+      };
+    
+      return UserModel;
     });
     
     app.controller('UsersController', function(UserCollection, $scope) {
-        $scope.users = UserCollection.items();
-        $scope.updateUser = function(user) {
-            UserCollection.update(user).then(
-                /* success */
-                function() {
-                    alert(user.fullName()+' was saved successfully.");
-                },
-                /* error */
-                function(response) {
-                    alert(user.fullName()+' could not be saved.  Server said: '+response.data);
-                }
-            );
-        }
-        
-        // Lazy-load the collection asynchronously.
-        UserCollection.getAll();
+      $scope.users = UserCollection.items();
+      $scope.updateUser = function(user) {
+        UserCollection.update(user).then(
+          /* success */
+          function() {
+            alert(user.fullName()+' was saved successfully.");
+          },
+          /* error */
+          function(response) {
+            alert(user.fullName()+' could not be saved.  Server said: '+response.data);
+          }
+        );
+      };
+      
+      // Lazy-load the collection asynchronously.
+      UserCollection.getAll();
     });
