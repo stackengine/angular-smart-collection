@@ -34,10 +34,7 @@ angular.module('SmartCollection', [])
       });
 
       // Compose the URL we will be using.
-      var url = route.url;
-      if (route.urlKeys) {
-        url = composeUrl(item, route.url, route.urlKeys);
-      }
+      var url = composeUrl(item, route.url, route.urlKeys);
 
       // Transform the parameters if necessary.
       var params = item;
@@ -70,7 +67,7 @@ angular.module('SmartCollection', [])
           return items;
         } else if (route.responseType == 'ignore' || typeof response.routeType == 'undefined') {
           // By default we will ignore everything sent back from the API.
-          return items;
+          return data;
         } else {
           throw "Unknown route responseType '"+route.responseType+"' for route "+routeName;
         }
@@ -122,9 +119,10 @@ angular.module('SmartCollection', [])
     // Takes a url pattern and replaces variables with values from item as
     // mapped by the keys hash.  For example "/users/:id" becomes "/users/3".
     var composeUrl = function(item, url, keys) {
-      angular.forEach(keys, function(v,k) {
-        url = url.replace(':'+k, item[v])
-      })
+      var matches;
+      while (matches = url.match(/:([^\/\?$]+)/)) {
+        url = url.replace(matches[0], item[matches[1]]);
+      }
       return url;
     };
 
