@@ -46,7 +46,7 @@ Every route you define is given its own function on the SmartCollection instance
 When defining routes, these are the availble parameters:
 
 * Required parameters
-  * **url** - The URL for this API call.  You can use colon-denoted parameters to add attributes from a model object.  Each colon-denoted parameter should have an associated urlKeys value.  Example: "/users.json" or "/users/3.json"
+  * **url** - The URL for this API call.  You can use colon-denoted parameters to add attributes from a model object.  By default each attribute will be pulled from the model object, but the names can be overridden by the urlKeys option.  Example: "/users.json" or "/users/:id.json".  In this second case, the model.id value will be used in place of :id.
   * **method** - Any HTTP method accepted by $http.  Example: "get", "post", "delete", etc.
 
 * Optional parameters
@@ -55,7 +55,7 @@ When defining routes, these are the availble parameters:
     * "_array_" - Response is an array of items that represents the entire collection.  New items will be created and added to the collection, existing items will have attributes merged, and anything in the existing collection that does not exist in the response array will be removed.
     * "_one_" - Response is a single item.  Using its primary key, it will be added or merged into the current collection.
     * "_remove_" - After a successful response is received, the item operated on by this route will be removed from the local collection array.
-  * **urlKeys** - A hash that maps model attributes to url parameters.  Example: ```{id: 'id'}```
+  * **urlKeys** - A hash that maps model attributes to url parameters.  This is only necessary if the colon-delimited name in the URL is different from the model attribute name.  Example: ```{ID: 'id'}```
   * **transformRequestData(data)** - A function that transforms a model before it is sent as they parameter payload on the $http request.  This should return a plain JavaScript object with all the attributes you want to send to the HTTP request.
   * **transformResponseData(data)** - A function that transforms the response.data from $http before it is turned into a model object by SmartCollection.  This should return a plain JavaScript object with all the attributes (and any changes) you want to store in the model.
 
