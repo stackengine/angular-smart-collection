@@ -151,8 +151,8 @@ angular.module('SmartCollection', [])
       } else {
         var obj = {};
         obj[key] = keyValue;
-        pendingItems[keyValue] = obj;
-        return obj;
+        pendingItems[keyValue] = new model(obj);
+        return pendingItems[keyValue];
       }
     };
 

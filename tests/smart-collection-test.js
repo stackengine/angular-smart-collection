@@ -3,7 +3,7 @@ describe('SmartCollection', function() {
     var $httpBackend;
     var SmartCollection;
     var TestCollection;
-    var TestModel = function(data) {
+    function TestModel(data) {
       angular.extend(this, data);
     };
 
@@ -54,6 +54,12 @@ describe('SmartCollection', function() {
       });
       $httpBackend.flush();
     });
+
+    it('creates a model object for pending items', function() {
+      expect(TestCollection.items().length).toEqual(0);
+      var item = TestCollection.item(1);
+      expect(item.constructor.name).toEqual('TestModel');
+    })
 
   })
 })
