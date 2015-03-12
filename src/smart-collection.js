@@ -11,6 +11,7 @@ angular.module('SmartCollection', [])
     var key = config.key || 'id';
     var items = [];
     var itemIndex = {};
+    var pendingItems = {};
     var model = config.model || (function GenericModel(attrs) {
       var self = this;
       angular.forEach(attrs, function(value, key) {
@@ -33,11 +34,18 @@ angular.module('SmartCollection', [])
         }
       });
 
+      // Convert plain a plain key item to an object so we support both query types
+      if (typeof item !== 'object') {
+        var obj = {};
+        obj[key] = item;
+        item = obj;
+      }
+
       // Compose the URL we will be using.
       var url = composeUrl(item, route.url, route.urlKeys);
 
       // Transform the parameters if necessary.
-      var params = item;
+      var params = angular.copy(item);
       if (route.transformRequestData) {
         params = route.transformRequestData(item);
       }
@@ -110,6 +118,10 @@ angular.module('SmartCollection', [])
     var injectItem = function(item) {
       if (itemIndex[item[key]]) {
         angular.extend(itemIndex[item[key]], item);
+      } else if (pendingItems[item[key]]) {
+        itemIndex[item[key]] = angular.extend(pendingItems[item[key]], item);
+        items.push(itemIndex[item[key]]);
+        delete pendingItems[item[key]];
       } else {
         itemIndex[item[key]] = item;
         items.push(item);
@@ -131,7 +143,18 @@ angular.module('SmartCollection', [])
 
     var SmartCollection = function() {};
     SmartCollection.prototype.items = function() { return items; };
-    SmartCollection.prototype.item = function(keyValue) { return itemIndex[keyValue]; };
+    SmartCollection.prototype.item = function(keyValue) {
+      if (typeof itemIndex[keyValue] !== 'undefined') {
+        return itemIndex[keyValue];
+      } else if (typeof pendingItems[keyValue] !== 'undefined') {
+        return pendingItems[keyValue];
+      } else {
+        var obj = {};
+        obj[key] = keyValue;
+        pendingItems[keyValue] = obj;
+        return obj;
+      }
+    };
 
     // Create a function for each route dynamically
     angular.forEach(routes, function(route, routeName) {
