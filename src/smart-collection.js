@@ -52,6 +52,9 @@ angular.module('SmartCollection', [])
 
       return $http[route.method](url, params).then(function(response) {
         var data = response.data;
+        if (route.responsePrefix) {
+          data = data[route.responsePrefix];
+        }
         if (route.transformResponseData) {
           data = route.transformResponseData(response.data)
         }

@@ -1,4 +1,8 @@
 describe('SmartCollection', function() {
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // Single response
+  ////////////////////////////////////////////////////////////////////////////////
   describe('one response', function() {
     var $httpBackend;
     var SmartCollection;
@@ -59,7 +63,47 @@ describe('SmartCollection', function() {
       expect(TestCollection.items().length).toEqual(0);
       var item = TestCollection.item(1);
       expect(item.constructor.name).toEqual('TestModel');
-    })
+    });
+  });
 
-  })
+  ////////////////////////////////////////////////////////////////////////////////
+  // Prefixed Responses
+  ////////////////////////////////////////////////////////////////////////////////
+  describe('one prefixed response', function() {
+    var $httpBackend;
+    var SmartCollection;
+    var TestCollection;
+    function TestModel(data) {
+      angular.extend(this, data);
+    };
+
+    beforeEach(module('SmartCollection'));
+    beforeEach(inject(function(_$httpBackend_, _SmartCollection_) {
+      SmartCollection = _SmartCollection_;
+      TestCollection = new SmartCollection({
+        model: TestModel,
+        routes: {
+          getOne: {
+            method: 'get',
+            responsePrefix: 'prefix',
+            responseType: 'one',
+            url: '/test/:id'
+          }
+        }
+      });
+
+      $httpBackend = _$httpBackend_;
+      $httpBackend.when('GET', '/test/1').respond({prefix: {id: 1, name:"one"}});
+      $httpBackend.when('GET', '/test/2').respond({prefix: {id: 2, name:"two"}});
+    }))
+
+    ///////////////////////////////////////////////////////////////////////////////
+
+    it('parses prefixed responses', function() {
+      TestCollection.getOne(1).then(function() {
+        expect(TestCollection.item(1).name).toEqual('one');
+      });
+      $httpBackend.flush();
+    });
+  });
 })
