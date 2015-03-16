@@ -56,7 +56,7 @@ angular.module('SmartCollection', [])
           data = data[route.responsePrefix];
         }
         if (route.transformResponseData) {
-          data = route.transformResponseData(response.data)
+          data = route.transformResponseData(response.data, item)
         }
 
         // GET requests will set loaded to true.  This is just a convenience

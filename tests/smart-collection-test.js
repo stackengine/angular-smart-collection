@@ -67,6 +67,50 @@ describe('SmartCollection', function() {
   });
 
   ////////////////////////////////////////////////////////////////////////////////
+  // Transformed request and response
+  ////////////////////////////////////////////////////////////////////////////////
+  describe('transform request', function() {
+    var $httpBackend;
+    var SmartCollection;
+    var TestCollection;
+    function TestModel(data) {
+      angular.extend(this, data);
+    };
+
+    beforeEach(module('SmartCollection'));
+    beforeEach(inject(function(_$httpBackend_, _SmartCollection_) {
+      SmartCollection = _SmartCollection_;
+      TestCollection = new SmartCollection({
+        model: TestModel,
+        routes: {
+          getOne: {
+            method: 'get',
+            responseType: 'one',
+            url: '/test/:id',
+            transformResponseData: function(responseData, item) {
+              return {worked:true};
+            }
+          }
+        }
+      });
+
+      $httpBackend = _$httpBackend_;
+      $httpBackend.when('GET', '/test/1').respond({id: 1, name:"one"});
+      $httpBackend.when('GET', '/test/2').respond({id: 2, name:"two"});
+    }))
+
+    ///////////////////////////////////////////////////////////////////////////////
+
+    it('transforms the response', function() {
+      TestCollection.getOne(1).then(function() {
+        expect(TestCollection.items()[0].worked).toEqual(true);
+      });
+      $httpBackend.flush();
+    });
+  });
+
+
+  ////////////////////////////////////////////////////////////////////////////////
   // Prefixed Responses
   ////////////////////////////////////////////////////////////////////////////////
   describe('one prefixed response', function() {

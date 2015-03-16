@@ -57,8 +57,8 @@ When defining routes, these are the availble parameters:
     * "_remove_" - After a successful response is received, the item operated on by this route will be removed from the local collection array.
   * **responsePrefix** - String.  If present, all response data will be assumed to have this prefix.  For example, your "users" API may return ```{users: [...]}```.  By setting responsePrefix to "users", SmartCollection will know where to look for the actual data.
   * **urlKeys** - A hash that maps model attributes to url parameters.  This is only necessary if the colon-delimited name in the URL is different from the model attribute name.  Example: ```{ID: 'id'}```
-  * **transformRequestData(data)** - A function that transforms a model before it is sent as they parameter payload on the $http request.  This should return a plain JavaScript object with all the attributes you want to send to the HTTP request.
-  * **transformResponseData(data)** - A function that transforms the response.data from $http before it is turned into a model object by SmartCollection.  This should return a plain JavaScript object with all the attributes (and any changes) you want to store in the model.
+  * **transformRequestData(item)** - A function that transforms a model before it is sent as they parameter payload on the $http request.  This should return a plain JavaScript object with all the attributes you want to send to the HTTP request.
+  * **transformResponseData(responseData, item)** - A function that transforms the response.data from $http before it is turned into a model object by SmartCollection.  This should return a plain JavaScript object with all the attributes (and any changes) you want to store in the model.
 
 ### Example
 
