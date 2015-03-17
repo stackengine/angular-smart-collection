@@ -17,7 +17,7 @@
     "karma-phantomjs-launcher": "^0.1.4"
   },
   "scripts": {
-    "test": "karma start --log-level debug --single-run"
+    "test": "karma start --single-run"
   },
   "keywords": [
     "angular",

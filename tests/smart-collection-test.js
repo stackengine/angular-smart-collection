@@ -67,6 +67,72 @@ describe('SmartCollection', function() {
   });
 
   ////////////////////////////////////////////////////////////////////////////////
+  // Piggybacks requests
+  ////////////////////////////////////////////////////////////////////////////////
+  describe('request piggybacking', function() {
+    var $httpBackend;
+    var SmartCollection;
+    var TestCollection;
+    var responseCounter, promiseCounter;
+
+    beforeEach(module('SmartCollection'));
+    beforeEach(inject(function(_$httpBackend_, _SmartCollection_) {
+      SmartCollection = _SmartCollection_;
+      $httpBackend = _$httpBackend_;
+
+      responseCounter = 0;
+      promiseCounter = 0;
+      TestCollection = new SmartCollection({
+        routes: {
+          getOne: {
+            method: 'get',
+            responseType: 'one',
+            url: '/test/:id',
+            transformResponseData: function(responseData, item) {
+              responseCounter++;
+              return item;
+            }
+          }
+        }
+      });
+      $httpBackend.when('GET', '/test/1').respond({id: 1, name:"one"});
+      $httpBackend.when('GET', '/test/2').respond({id: 2, name:"two"});
+    }))
+
+    ///////////////////////////////////////////////////////////////////////////////
+
+    it('reuses the same promise', function() {
+      TestCollection.getOne(1).then(function() { promiseCounter++; });
+      TestCollection.getOne(1).then(function() { promiseCounter++; });
+      $httpBackend.flush();
+
+      expect(responseCounter).toEqual(1);
+      expect(promiseCounter).toEqual(2);
+    });
+
+    it('resets the promise cache after each request', function() {
+      TestCollection.getOne(1).then(function() { promiseCounter++; });
+      $httpBackend.flush();
+      TestCollection.getOne(1).then(function() { promiseCounter++; });
+      $httpBackend.flush();
+
+      expect(responseCounter).toEqual(2);
+      expect(promiseCounter).toEqual(2);
+    });
+
+    it('returns a new promise for separate requests', function() {
+      TestCollection.getOne(1).then(function() { promiseCounter++; });
+      TestCollection.getOne(2).then(function() { promiseCounter++; });
+      $httpBackend.flush();
+
+      expect(responseCounter).toEqual(2);
+      expect(promiseCounter).toEqual(2);
+    });
+  });
+
+
+
+  ////////////////////////////////////////////////////////////////////////////////
   // Transformed request and response
   ////////////////////////////////////////////////////////////////////////////////
   describe('transform request', function() {

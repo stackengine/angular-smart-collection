@@ -12,6 +12,7 @@ angular.module('SmartCollection', [])
     var items = [];
     var itemIndex = {};
     var pendingItems = {};
+    var promises = {};
     var model = config.model || (function GenericModel(attrs) {
       var self = this;
       angular.forEach(attrs, function(value, key) {
@@ -44,13 +45,26 @@ angular.module('SmartCollection', [])
       // Compose the URL we will be using.
       var url = composeUrl(item, route.url, route.urlKeys);
 
+      // If a request is already in process for this route, lets just
+      // piggyback.  Instead of issuing another request, just return the
+      // previous promise.
+      var promiseKey = route.method+' '+url;
+      if (promises[promiseKey]) {
+        return promises[promiseKey];
+      }
+
       // Transform the parameters if necessary.
       var params = angular.copy(item);
       if (route.transformRequestData) {
         params = route.transformRequestData(item);
       }
 
-      return $http[route.method](url, params).then(function(response) {
+      var promise = $http[route.method](url, params).then(function(response) {
+        // clean up after ourselves -- since this request is complete, remove
+        // our cached promise reference so future requests to this route will
+        // generate a new request.
+        delete promises[promiseKey];
+
         var data = response.data;
         if (route.responsePrefix) {
           data = data[route.responsePrefix];
@@ -83,6 +97,9 @@ angular.module('SmartCollection', [])
           throw "Unknown route responseType '"+route.responseType+"' for route "+routeName;
         }
       });
+
+      promises[promiseKey] = promise;
+      return promise;
     };
 
     var updateAllItems = function(data) {
