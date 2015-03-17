@@ -168,6 +168,11 @@ angular.module('SmartCollection', [])
         return itemIndex[keyValue];
       } else if (typeof pendingItems[keyValue] !== 'undefined') {
         return pendingItems[keyValue];
+      } else if (typeof keyValue == 'object') {
+        var obj = keyValue;
+        keyValue = obj[key];
+        pendingItems[keyValue] = new model(obj);
+        return pendingItems[keyValue];
       } else {
         var obj = {};
         obj[key] = keyValue;
