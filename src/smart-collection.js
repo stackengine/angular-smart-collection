@@ -59,44 +59,46 @@ angular.module('SmartCollection', [])
         params = route.transformRequestData(item);
       }
 
-      var promise = $http[route.method](url, params).then(function(response) {
-        // clean up after ourselves -- since this request is complete, remove
-        // our cached promise reference so future requests to this route will
-        // generate a new request.
-        delete promises[promiseKey];
+      var promise = $http[route.method](url, params)
+        .then(function(response) {
+          var data = response.data;
+          if (route.responsePrefix) {
+            data = data[route.responsePrefix];
+          }
+          if (route.transformResponseData) {
+            data = route.transformResponseData(response.data, item)
+          }
 
-        var data = response.data;
-        if (route.responsePrefix) {
-          data = data[route.responsePrefix];
-        }
-        if (route.transformResponseData) {
-          data = route.transformResponseData(response.data, item)
-        }
+          // GET requests will set loaded to true.  This is just a convenience
+          // way to know if items have been retrieved.
+          if (route.method.toLowerCase() == 'get') {
+            loaded = true;
+          }
 
-        // GET requests will set loaded to true.  This is just a convenience
-        // way to know if items have been retrieved.
-        if (route.method.toLowerCase() == 'get') {
-          loaded = true;
-        }
-
-        if (route.responseType == 'array') {
-          updateAllItems(data);
-          return items;
-        } else if (route.responseType == 'one') {
-          updateOneItem(data);
-          return items[data[key]];
-        } else if (route.responseType == 'remove') {
-          // Ignores the response from the API but removes the item from our
-          // collection.
-          removeItem(item);
-          return items;
-        } else if (route.responseType == 'ignore' || typeof response.routeType == 'undefined') {
-          // By default we will ignore everything sent back from the API.
-          return data;
-        } else {
-          throw "Unknown route responseType '"+route.responseType+"' for route "+routeName;
-        }
-      });
+          if (route.responseType == 'array') {
+            updateAllItems(data);
+            return items;
+          } else if (route.responseType == 'one') {
+            updateOneItem(data);
+            return items[data[key]];
+          } else if (route.responseType == 'remove') {
+            // Ignores the response from the API but removes the item from our
+            // collection.
+            removeItem(item);
+            return items;
+          } else if (route.responseType == 'ignore' || typeof response.routeType == 'undefined') {
+            // By default we will ignore everything sent back from the API.
+            return data;
+          } else {
+            throw "Unknown route responseType '"+route.responseType+"' for route "+routeName;
+          }
+        })
+        .finally(function() {
+          // clean up after ourselves -- since this request is complete, remove
+          // our cached promise reference so future requests to this route will
+          // generate a new request.
+          delete promises[promiseKey];
+        });
 
       promises[promiseKey] = promise;
       return promise;
@@ -164,17 +166,18 @@ angular.module('SmartCollection', [])
     var SmartCollection = function() {};
     SmartCollection.prototype.items = function() { return items; };
     SmartCollection.prototype.item = function(keyValue) {
+      var pendingObj = null;
+      if (typeof keyValue == 'object') {
+        pendingObj = keyValue;
+        keyValue = pendingObj[key];
+      }
+
       if (typeof itemIndex[keyValue] !== 'undefined') {
         return itemIndex[keyValue];
       } else if (typeof pendingItems[keyValue] !== 'undefined') {
         return pendingItems[keyValue];
-      } else if (typeof keyValue == 'object') {
-        var obj = keyValue;
-        keyValue = obj[key];
-        pendingItems[keyValue] = new model(obj);
-        return pendingItems[keyValue];
       } else {
-        var obj = {};
+        var obj = pendingObj || {};
         obj[key] = keyValue;
         pendingItems[keyValue] = new model(obj);
         return pendingItems[keyValue];
