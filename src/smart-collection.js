@@ -43,7 +43,11 @@ angular.module('SmartCollection', [])
       }
 
       // Compose the URL we will be using.
-      var url = composeUrl(item, route.url, route.urlKeys);
+      var url = route.url;
+      if (typeof url == 'function') {
+        url = route.url.call();
+      }
+      url = composeUrl(item, url, route.urlKeys);
 
       // If a request is already in process for this route, lets just
       // piggyback.  Instead of issuing another request, just return the
