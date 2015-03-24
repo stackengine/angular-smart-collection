@@ -62,6 +62,11 @@ angular.module('SmartCollection', [])
       if (route.transformRequestData) {
         params = route.transformRequestData(item);
       }
+      if (route.requestPrefix) {
+        var newParams = {};
+        newParams[route.requestPrefix] = params;
+        params = newParams;
+      }
 
       var promise = $http[route.method](url, params)
         .then(function(response) {
