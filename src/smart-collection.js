@@ -117,8 +117,8 @@ angular.module('SmartCollection', [])
       // Add new items and update existing items with new values
       var currentKeys = {};
       angular.forEach(data, function(item) {
-        updateOneItem(item);
-        currentKeys[item[key]] = 1;
+        var model = updateOneItem(item);
+        currentKeys[model[key]] = 1;
       });
       // Remove items from the array and index.
       for (var i=0; i < items.length; i++) {
@@ -132,7 +132,9 @@ angular.module('SmartCollection', [])
     };
 
     var updateOneItem = function(data) {
-      injectItem(new model(data));
+      var item = new model(data);
+      injectItem(item);
+      return item;
     };
 
     var removeItem = function(item) {
