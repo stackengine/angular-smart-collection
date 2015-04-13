@@ -15,11 +15,13 @@ angular.module('SmartCollection', [])
     var promises = {};
     var model = config.model || (function GenericModel(attrs) {
       var self = this;
-      angular.forEach(attrs, function(value, key) {
-        self[key] = value;
+      angular.forEach(attrs, function(value, attr) {
+        self[attr] = value;
       });
     });
 
+    if (typeof key == 'string')
+      key = [key];
 
     // PRIVATE INTERFACE ------------------------------------------------
 
@@ -29,9 +31,9 @@ angular.module('SmartCollection', [])
 
       // Do some sanity checking to make sure required values exist.
       if (!route) throw "Unknown route named '"+routeName+"'";
-      angular.forEach(['url', 'method'], function(key) {
-        if (!route[key]) {
-          throw "Route '"+routeName+"' does not have required parameter: "+key;
+      angular.forEach(['url', 'method'], function(attr) {
+        if (!route[attr]) {
+          throw "Route '"+routeName+"' does not have required parameter: "+attr;
         }
       });
 
@@ -62,11 +64,6 @@ angular.module('SmartCollection', [])
       if (route.transformRequestData) {
         params = route.transformRequestData(item);
       }
-      if (route.requestPrefix) {
-        var newParams = {};
-        newParams[route.requestPrefix] = params;
-        params = newParams;
-      }
 
       var promise = $http[route.method](url, params)
         .then(function(response) {
@@ -89,7 +86,7 @@ angular.module('SmartCollection', [])
             return items;
           } else if (route.responseType == 'one') {
             updateOneItem(data);
-            return items[data[key]];
+            return indexLookup(itemIndex, data);
           } else if (route.responseType == 'remove') {
             // Ignores the response from the API but removes the item from our
             // collection.
@@ -118,12 +115,12 @@ angular.module('SmartCollection', [])
       var currentKeys = {};
       angular.forEach(data, function(item) {
         var model = updateOneItem(item);
-        currentKeys[model[key]] = 1;
+        indexStore(currentKeys, model)
       });
       // Remove items from the array and index.
       for (var i=0; i < items.length; i++) {
         var currentItem = items[i]
-        if (!currentKeys[currentItem[key]]) {
+        if (!indexLookup(currentKeys, currentItem)) {
           items.splice(i, 1);
           delete itemIndex[currentItem[key]];
           i--; // decrement since we removed one value from the array
@@ -142,21 +139,24 @@ angular.module('SmartCollection', [])
         var currentItem = items[i];
         if (currentItem[key] == item[key]) {
           items.splice(i, 1);
-          delete itemIndex[currentItem[key]]
+          indexRemove(itemIndex, item);
           return;
         }
       }
     };
 
     var injectItem = function(item) {
-      if (itemIndex[item[key]]) {
-        angular.extend(itemIndex[item[key]], item);
-      } else if (pendingItems[item[key]]) {
-        itemIndex[item[key]] = angular.extend(pendingItems[item[key]], item);
-        items.push(itemIndex[item[key]]);
-        delete pendingItems[item[key]];
+      var indexItem;
+      if (indexItem = indexLookup(itemIndex, item)) {
+        angular.extend(indexItem, item);
+      } else if (indexItem = indexLookup(pendingItems, item)) {
+        angular.extend(pendingItems, item);
+        indexItem = angular.extend(indexItem, item)
+        indexStore(itemIndex, indexItem);
+        items.push(indexItem);
+        indexRemove(pendingItems, item);
       } else {
-        itemIndex[item[key]] = item;
+        indexStore(itemIndex, item);
         items.push(item);
       }
     };
@@ -171,6 +171,37 @@ angular.module('SmartCollection', [])
       return url;
     };
 
+    var indexLookup = function(indexHandle, obj) {
+      for (var i=0; i < key.length; i++) {
+        var k = obj[key[i]];
+        if (i == key.length-1)
+          return indexHandle[k];
+        if (!indexHandle[k])
+          return;
+        indexHandle = indexHandle[k];
+      }
+    };
+
+    var indexStore = function(indexHandle, obj) {
+      for (var i=0; i < key.length; i++) {
+        var k = obj[key[i]];
+        if (i == key.length-1)
+          indexHandle[k] = obj;
+        else if (!indexHandle[k])
+          indexHandle[k] = {};
+        indexHandle = indexHandle[k];
+      }
+    };
+
+    var indexRemove = function(indexHandle, obj) {
+      for (var i=0; i < key.length; i++) {
+        var k = obj[key[i]];
+        if (i == key.length-1)
+          delete indexHandle[k];
+        else
+          indexHandle = indexHandle[k];
+      }
+    };
 
     // PUBLIC INTERFACE ------------------------------------------------
 
@@ -194,6 +225,13 @@ angular.module('SmartCollection', [])
         return pendingItems[keyValue];
       }
     };
+    SmartCollection.prototype.lookup = function(obj) {
+      if (typeof obj == 'string') {
+        obj = {};
+        obj[key[0]] = obj;
+      }
+      return indexLookup(itemIndex, obj);
+    }
 
     // Create a function for each route dynamically
     angular.forEach(routes, function(route, routeName) {

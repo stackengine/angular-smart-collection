@@ -216,4 +216,77 @@ describe('SmartCollection', function() {
       $httpBackend.flush();
     });
   });
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // Complex Keys
+  ////////////////////////////////////////////////////////////////////////////////
+  describe('complex keys', function() {
+    var $httpBackend;
+    var SmartCollection;
+    var TestCollection;
+    function TestModel(data) {
+      angular.extend(this, data);
+    };
+
+    beforeEach(module('SmartCollection'));
+    beforeEach(inject(function(_$httpBackend_, _SmartCollection_) {
+      SmartCollection = _SmartCollection_;
+      TestCollection = new SmartCollection({
+        model: TestModel,
+        key: ['number', 'letter'],
+        routes: {
+          getAll: {
+            method: 'get',
+            responseType: 'array',
+            url: '/test'
+          },
+          getOne: {
+            method: 'get',
+            responseType: 'one',
+            url: '/test/:number/:letter'
+          },
+          removeOne: {
+            method: 'delete',
+            responseType: 'remove',
+            url: '/test/:number/:letter'
+          }
+        }
+      });
+
+      var values = [
+        {number: 1, letter:"A", secret:"W"},
+        {number: 1, letter:"B", secret:"X"},
+        {number: 2, letter:"A", secret:"Y"},
+        {number: 2, letter:"B", secret:"Z"}
+      ];
+
+      $httpBackend = _$httpBackend_;
+      $httpBackend.when('GET', '/test').respond(values);
+      $httpBackend.when('GET', '/test/1/A').respond(values[0]);
+      $httpBackend.when('GET', '/test/1/B').respond(values[1]);
+      $httpBackend.when('GET', '/test/2/A').respond(values[2]);
+      $httpBackend.when('GET', '/test/2/B').respond(values[3]);
+      $httpBackend.when('DELETE', '/test/1/B').respond({success:true});
+    }))
+
+    ///////////////////////////////////////////////////////////////////////////////
+
+    it('parses prefixed responses', function() {
+      var obj = {number:1, letter:'B'};
+      TestCollection.getOne(obj).then(function() {
+        expect(TestCollection.lookup(obj).secret).toEqual('X');
+      });
+      $httpBackend.flush();
+    });
+
+    it('gets all items properly', function() {
+      var items = TestCollection.items();
+      TestCollection.getAll().then(function() { expect(items.length).toEqual(4); });
+      $httpBackend.flush();
+
+      TestCollection.removeOne({number:1, letter:'B'}).then(function() { expect(items.length).toEqual(3); });
+      $httpBackend.flush();
+    })
+  });
+
 })
