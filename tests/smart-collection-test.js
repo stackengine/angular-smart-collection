@@ -64,6 +64,33 @@ describe('SmartCollection', function() {
       var item = TestCollection.item(1);
       expect(item.constructor.name).toEqual('TestModel');
     });
+
+    it('returns the same instances object and array with deep similiarity', function() {
+      var counter = 0;
+      function TestModel2(data) {
+        angular.extend(this, data);
+        this.counter = counter++;
+      };
+      TestCollection2 = new SmartCollection({
+        model: TestModel2,
+        routes: {
+          getOne: {
+            method: 'get',
+            responseType: 'one',
+            url: '/test/:id'
+          }
+        }
+      });
+
+      var obj = TestCollection2.item({id:1});
+      var items = TestCollection2.items();
+      TestCollection2.getOne(obj).then(function(newObj) {
+        expect(TestCollection2.items()).toEqual(items);
+        expect(newObj).toEqual(obj);
+      });
+      $httpBackend.flush();
+
+    })
   });
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -286,6 +313,22 @@ describe('SmartCollection', function() {
 
       TestCollection.removeOne({number:1, letter:'B'}).then(function() { expect(items.length).toEqual(3); });
       $httpBackend.flush();
+    });
+
+    it('handles complex keys with pending items', function() {
+      var item = TestCollection.item({number:1, letter:'A'});
+
+      expect(item.secret).toBeUndefined();
+      TestCollection.getOne({number:1, letter:'A'}).then(function() {
+        expect(item.secret).toEqual('W');
+      });
+      $httpBackend.flush();
+    })
+
+    it('handles multiple pending lookups', function() {
+      var item1 = TestCollection.item({number:1, letter:'A'});
+      var item2 = TestCollection.item({number:1, letter:'A'});
+      expect(item1).toEqual(item2);
     })
   });
 

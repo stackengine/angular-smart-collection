@@ -29,6 +29,7 @@ angular.module('SmartCollection', [])
       var collection = this;
       var route = routes[routeName];
 
+
       // Do some sanity checking to make sure required values exist.
       if (!route) throw "Unknown route named '"+routeName+"'";
       angular.forEach(['url', 'method'], function(attr) {
@@ -64,6 +65,11 @@ angular.module('SmartCollection', [])
       if (route.transformRequestData) {
         params = route.transformRequestData(item);
       }
+      if (route.requestPrefix) {
+        var newParams = {};
+        newParams[route.requestPrefix] = params;
+        params = newParams;
+      }
 
       var promise = $http[route.method](url, params)
         .then(function(response) {
@@ -74,6 +80,12 @@ angular.module('SmartCollection', [])
           if (route.transformResponseData) {
             data = route.transformResponseData(response.data, item)
           }
+
+          // If the keys do not exist in the response, add them
+          angular.forEach(key, function(k) {
+            if (typeof data[k] == 'undefined')
+              data[k] = params[k];
+          });
 
           // GET requests will set loaded to true.  This is just a convenience
           // way to know if items have been retrieved.
@@ -122,7 +134,7 @@ angular.module('SmartCollection', [])
         var currentItem = items[i]
         if (!indexLookup(currentKeys, currentItem)) {
           items.splice(i, 1);
-          delete itemIndex[currentItem[key]];
+          indexRemove(itemIndex, currentItem);
           i--; // decrement since we removed one value from the array
         }
       }
@@ -130,8 +142,7 @@ angular.module('SmartCollection', [])
 
     var updateOneItem = function(data) {
       var item = new model(data);
-      injectItem(item);
-      return item;
+      return injectItem(item);
     };
 
     var removeItem = function(item) {
@@ -149,15 +160,17 @@ angular.module('SmartCollection', [])
       var indexItem;
       if (indexItem = indexLookup(itemIndex, item)) {
         angular.extend(indexItem, item);
+        return indexItem;
       } else if (indexItem = indexLookup(pendingItems, item)) {
-        angular.extend(pendingItems, item);
-        indexItem = angular.extend(indexItem, item)
-        indexStore(itemIndex, indexItem);
+        angular.extend(indexItem, item)
         items.push(indexItem);
-        indexRemove(pendingItems, item);
+        indexStore(itemIndex, indexItem);
+        indexRemove(pendingItems, indexItem);
+        return indexItem;
       } else {
-        indexStore(itemIndex, item);
         items.push(item);
+        indexStore(itemIndex, item);
+        return item;
       }
     };
 
@@ -196,9 +209,9 @@ angular.module('SmartCollection', [])
     var indexRemove = function(indexHandle, obj) {
       for (var i=0; i < key.length; i++) {
         var k = obj[key[i]];
-        if (i == key.length-1)
+        if (i == key.length-1) {
           delete indexHandle[k];
-        else
+        } else
           indexHandle = indexHandle[k];
       }
     };
@@ -207,22 +220,22 @@ angular.module('SmartCollection', [])
 
     var SmartCollection = function() {};
     SmartCollection.prototype.items = function() { return items; };
-    SmartCollection.prototype.item = function(keyValue) {
-      var pendingObj = null;
-      if (typeof keyValue == 'object') {
-        pendingObj = keyValue;
-        keyValue = pendingObj[key];
+    SmartCollection.prototype.item = function(obj) {
+      if (typeof obj != 'object') {
+        newObj = {};
+        newObj[key[0]] = obj;
+        obj = newObj;
       }
 
-      if (typeof itemIndex[keyValue] !== 'undefined') {
-        return itemIndex[keyValue];
-      } else if (typeof pendingItems[keyValue] !== 'undefined') {
-        return pendingItems[keyValue];
+      var indexItem;
+      if (typeof (indexItem = indexLookup(itemIndex, obj)) !== 'undefined') {
+        return indexItem;
+      } else if (typeof (indexItem = indexLookup(pendingItems, obj)) !== 'undefined') {
+        return indexItem;
       } else {
-        var obj = pendingObj || {};
-        obj[key] = keyValue;
-        pendingItems[keyValue] = new model(obj);
-        return pendingItems[keyValue];
+        var pendingObj = new model(obj);
+        indexStore(pendingItems, pendingObj);
+        return pendingObj;
       }
     };
     SmartCollection.prototype.lookup = function(obj) {
