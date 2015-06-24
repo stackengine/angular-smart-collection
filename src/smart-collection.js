@@ -263,6 +263,10 @@ angular.module('SmartCollection', [])
       };
     });
 
+    // Bootstrap the items with default data if provided
+    if (config.bootstrap)
+      updateAllItems(config.bootstrap);
+
     return new SmartCollection();
   };
 });
