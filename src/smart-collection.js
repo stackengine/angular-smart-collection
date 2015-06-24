@@ -95,21 +95,24 @@ angular.module('SmartCollection', [])
 
           if (route.responseType == 'array') {
             updateAllItems(data);
-            return items;
+            rval = items;
           } else if (route.responseType == 'one') {
             updateOneItem(data);
-            return indexLookup(itemIndex, data);
+            rval = indexLookup(itemIndex, data);
           } else if (route.responseType == 'remove') {
             // Ignores the response from the API but removes the item from our
             // collection.
             removeItem(item);
-            return items;
+            rval = items;
           } else if (route.responseType == 'ignore' || typeof response.routeType == 'undefined') {
             // By default we will ignore everything sent back from the API.
-            return data;
+            rval = data;
           } else {
             throw "Unknown route responseType '"+route.responseType+"' for route "+routeName;
           }
+
+          sortCollection();
+          return rval;
         })
         .finally(function() {
           // clean up after ourselves -- since this request is complete, remove
@@ -120,6 +123,11 @@ angular.module('SmartCollection', [])
 
       promises[promiseKey] = promise;
       return promise;
+    };
+
+    var sortCollection = function() {
+      if (config.sort)
+        items.sort(config.sort);
     };
 
     var updateAllItems = function(data) {
